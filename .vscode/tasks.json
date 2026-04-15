@@ -1,0 +1,38 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: g++.exe build active file",
+            "command": "C:/msys64/ucrt64/bin/g++.exe",
+            "args": [
+                "-g",
+                "-std=c++17",
+                "-I${workspaceFolder}\\include",
+                "-L${workspaceFolder}\\lib",
+                "${workspaceFolder}\\main.cpp",
+                "${workspaceFolder}\\glad.c",
+                "${workspaceFolder}\\shader.cpp",
+                "${workspaceFolder}\\character.cpp",
+                "${workspaceFolder}\\cube.cpp",
+                "${workspaceFolder}\\stb_impl.cpp",
+                "${workspaceFolder}\\textureHandler.cpp",
+                "-lglfw3dll",
+                "-lopengl32",
+                "-o",
+                "${workspaceFolder}\\main.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "compiler: C:/msys64/ucrt64/bin/g++.exe"
+        }
+    ]
+}
