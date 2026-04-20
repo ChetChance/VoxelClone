@@ -1,11 +1,13 @@
 #include "character.h"
+#include "chunk.h"
+#include <algorithm>
 
 float deltaTime = 0.0f; // Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 const float cameraSpeed = 5.0f;
 
-Character player(0.25f, 1.0f, 0.0f, 5.0f, 0.1f, 5.0f, true);
+Character player(0.25f, 1.0f, -10.0f, 5.0f, 0.1f, 5.0f, false, glm::vec3(1.0f, 30.0f, 1.0f));
 
 bool mouseMove = false;
 
@@ -51,38 +53,38 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
-
-	glViewport(0, 0, width, height);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	unsigned int grassTexture = textureHandler::appendTexture("assets/grassTop.jpg");
 
 	Shader mainShader("vertexShader.glsl", "fragShader.glsl");
 
-	std::vector<Cube> cubes;
+	unsigned int cobbleTexture = textureHandler::appendTexture("assets/cobbleTex.jpg");
 
-	unsigned int grassTexture = textureHandler::appendTexture("assets/grassTop.jpg");
+	mainShader.use();
+	mainShader.setInt("grassTexture", 0);
+	mainShader.setInt("cobbleTexture", 1);
 
-	for (int i = 0; i < 20; i++)
+	const unsigned int chunkSize = 16;
+
+	std::vector<Chunk> chunks;
+
+	for (int chunkX = 0; chunkX < 10; chunkX++)
 	{
-		for (int j = 0; j < 20; j++)
+		for (int chunkZ = 0; chunkZ < 10; chunkZ++)
 		{
-			for (size_t k = 0; k < 15; k++)
-			{
-				cubes.emplace_back();
-				cubes.back().init(glm::vec3((float)i / 2, -(float)k / 2, (float)j / 2), grassTexture);
-				cubes.back().bufferize();
-			}
+
+			Chunk chunk(chunkSize, mainShader, glm::vec3(chunkX * chunkSize * 0.5f, 0.0f, chunkZ * chunkSize * 0.5f));
+
+			chunks.push_back(chunk);
 		}
 	}
 
-	unsigned int cobbleTexture = textureHandler::appendTexture("assets/cobbleTex.jpg");
+	// 1, -1, 1 is this cube's position
 
-	Cube stoneCube;
-	stoneCube.init(glm::vec3(2.0f, 1.0f, 2.0f), cobbleTexture);
-	stoneCube.bufferize();
+	// float checkVal = 5.0f * 2.0f;
+	// std::cout << chunk[checkVal*20.0f*20.0f + checkVal*20.0f + checkVal].x << " " << chunk[checkVal*20.0f*20.0f + checkVal*20.0f + checkVal].y << " " << chunk[checkVal*20.0f*20.0f + checkVal*20.0f + checkVal].z << " " << chunk[checkVal*20.0f*20.0f + checkVal*20.0f + checkVal].w << std::endl;
 
-	cubes.push_back(stoneCube);
-
-	mainShader.use();
+	glViewport(0, 0, width, height);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	glm::mat4 view = glm::mat4(1.0f);
 
@@ -115,21 +117,12 @@ int main()
 
 		mainShader.setMat4("view", glm::value_ptr(view));
 
-		player.update(mainShader, window, cubes.data(), cubes.size(), deltaTime, false);
+		player.update(mainShader, window, 0, 0, deltaTime, true, false);
 
-		for (size_t i = 0; i < cubes.size(); i++)
+		for (Chunk &chunk : chunks)
 		{
-			cubes[i].draw(mainShader, cubes[i].CubeID.y < 0.0f, cubes[i].CubeID.y > -7.0f, cubes[i].CubeID.x > 0.0f, cubes[i].CubeID.x < 9.5f, cubes[i].CubeID.z > 0.0f, cubes[i].CubeID.z < 9.5f);
+			chunk.update(mainShader, grassTexture, cobbleTexture);
 		}
-
-		glCullFace(GL_FRONT);
-		glFrontFace(GL_CW);
-
-		// inputs
-
-		// model = glm::translate(model, glm::vec3(0.0f, 2.0f, 0.0f));
-
-		// std::cout << timeValue << std::endl;
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);

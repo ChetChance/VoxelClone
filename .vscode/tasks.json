@@ -17,6 +17,7 @@
                 "${workspaceFolder}\\cube.cpp",
                 "${workspaceFolder}\\stb_impl.cpp",
                 "${workspaceFolder}\\textureHandler.cpp",
+                "${workspaceFolder}\\chunk.cpp",
                 "-lglfw3dll",
                 "-lopengl32",
                 "-o",

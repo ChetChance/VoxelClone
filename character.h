@@ -8,16 +8,15 @@ class Character
 {
     public:
         glm::mat4 view;
-        Character(const float playerRadius, const float playerHeight, float gravity, float jumpStrength, float Sensitivity, float speed, bool fly);
-        void update(Shader& shader, GLFWwindow* window, Cube collisionCubes[], int numCubes, float deltaTime, bool doCollision);
+        Character(const float playerRadius, const float playerHeight, float gravity, float jumpStrength, float Sensitivity, float speed, bool fly, glm::vec3 startPosition);
+        void update(Shader& shader, GLFWwindow* window, Cube collisionCubes[], int numCubes, float deltaTime, bool doCollision, bool gravityEnabled);
         void mouse_Handler(GLFWwindow* window, double xpos, double ypos);
         glm::vec3 CheckCollision(glm::vec3 posOne, float playerReach, float playerH, glm::vec3 posTwo, glm::vec3 sizeTwo);
         void setPositionY(glm::vec3* pos);
         void processInput(GLFWwindow* window, float deltaTime);
-        void handleGravity(GLFWwindow* window, float deltaTime);
+        void handleGravity(GLFWwindow* window, float deltaTime, bool gravityEnabled);
 
     private:
-        glm::vec3 position;
         glm::vec3 velocity;
         float gravitySpeed;
         glm::vec3 collideVec;

@@ -1,10 +1,10 @@
 #include "character.h"
 
-Character::Character(const float playerRadius, const float playerHeight, float gravity, float jumpStrength, float Sensitivity, float speed, bool fly)
+Character::Character(const float playerRadius, const float playerHeight, float gravity, float jumpStrength, float Sensitivity, float speed, bool fly, glm::vec3 startPosition)
 {
     glm::mat4 view = glm::mat4(1.0f);
 
-    position = glm::vec3(0.0f, 2.0f, 0.0f);
+    cameraPos = startPosition;
     velocity = glm::vec3(0.0f, 0.0f, 0.0f);
     gravitySpeed = 0.0f;
     this->gravity = gravity;
@@ -16,7 +16,7 @@ Character::Character(const float playerRadius, const float playerHeight, float g
     this->fly = fly;
 }
 
-void Character::update(Shader &shader, GLFWwindow *window, Cube collisionCubes[], int numCubes, float deltaTime, bool doCollision)
+void Character::update(Shader &shader, GLFWwindow *window, Cube collisionCubes[], int numCubes, float deltaTime, bool doCollision, bool gravityEnabled)
 {
     view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
     shader.setMat4("view", glm::value_ptr(view));
@@ -32,7 +32,7 @@ void Character::update(Shader &shader, GLFWwindow *window, Cube collisionCubes[]
     }
 
     processInput(window, deltaTime);
-    handleGravity(window, deltaTime);
+    handleGravity(window, deltaTime, gravityEnabled);
 }
 
 void Character::mouse_Handler(GLFWwindow *window, double xpos, double ypos)
@@ -168,9 +168,9 @@ void Character::processInput(GLFWwindow *window, float deltaTime)
     }
 }
 
-void Character::handleGravity(GLFWwindow *window, float deltaTime)
+void Character::handleGravity(GLFWwindow *window, float deltaTime, bool gravityEnabled)
 {
-    if (!fly)
+    if (gravityEnabled)
     {
         gravitySpeed += gravity * deltaTime;
         if (collideVec.y != 0.0f)

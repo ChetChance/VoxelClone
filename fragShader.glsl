@@ -1,12 +1,15 @@
 #version 410 core
 out vec4 FragColor;
-  
-in vec3 ourColor;
+
+flat in int TexIndex;
 in vec2 TexCoord;
 
-uniform sampler2D ourTexture;
+uniform sampler2D grassTexture;
+uniform sampler2D cobbleTexture;
 
 void main()
 {
-    FragColor = texture(ourTexture, TexCoord);
+    vec4 grassColor = texture(grassTexture, TexCoord);
+    vec4 cobbleColor = texture(cobbleTexture, TexCoord);
+    FragColor = (TexIndex == 1) ? cobbleColor : grassColor;
 }

@@ -18,10 +18,11 @@ public:
 	float vertices[36*5];
 	unsigned int VBO, VAO;
 	glm::mat4 model;
+	bool pX, nX, pY, nY, pZ, nZ;
 
-	void init(glm::vec3 pos, unsigned int texture);
+	void init(glm::vec3 pos, const unsigned int &texture);
 	void bufferize();
-	void draw(Shader& shader, bool aCube, bool bCube, bool pxCube, bool nxCube, bool pzCube, bool nzCube);
+	void draw(Shader& shader);
 private:
 	unsigned char* textureData;
 	unsigned int textureID;
