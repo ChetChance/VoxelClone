@@ -7,7 +7,7 @@ float lastFrame = 0.0f; // Time of last frame
 
 const float cameraSpeed = 5.0f;
 
-Character player(0.25f, 1.0f, -10.0f, 5.0f, 0.1f, 5.0f, false, glm::vec3(1.0f, 30.0f, 1.0f));
+Character player(0.25f, 1.0f, -10.0f, 5.0f, 0.1f, 5.0f, false, glm::vec3(1.0f, 10.0f, 1.0f));
 
 bool mouseMove = false;
 
