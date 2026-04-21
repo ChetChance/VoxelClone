@@ -26,6 +26,7 @@ class Chunk
         std::vector<unsigned char> blockVal;
         glm::vec3 chunkPosition;
         glm::mat4 model = glm::mat4(1.0f);
+        const float shadows[6] = { 1.0f, 1.0f, 0.8f, 0.8f, 0.6f, 1.1f };
         
 };
 

@@ -32,10 +32,12 @@ int main()
 
 	GLFWmonitor *primary = glfwGetPrimaryMonitor();
 	const GLFWvidmode *mode = glfwGetVideoMode(primary);
-	int width = mode->width;
-	int height = mode->height;
+	// int width = mode->width;
+	// int height = mode->height;
+	int width = 1200;
+	int height = 800;
 
-	GLFWwindow *window = glfwCreateWindow(width, height, "Window", primary, NULL);
+	GLFWwindow *window = glfwCreateWindow(width, height, "Window", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create window";

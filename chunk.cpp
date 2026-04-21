@@ -1,17 +1,19 @@
 #include "chunk.h"
+#include "FastNoiseLite.h"
 
 Chunk::Chunk(unsigned int chunkSize, Shader &shader, glm::vec3 chunkPosition)
 {
     this->chunkSize = chunkSize;
     this->chunkPosition = chunkPosition;
 
-    for (int i = 0; i < chunkSize; i++)
+    for (float i = 0; i < chunkSize; i++)
     {
-        for (int j = 0; j < chunkSize; j++)
+        for (float j = 0; j < chunkSize; j++)
         {
-            for (int k = 0; k < chunkSize; k++)
+            for (float k = 0; k < chunkSize; k++)
             {
-                int yOffset = rand() % 2 + 1;
+                FastNoiseLite noise = FastNoiseLite();
+                float yOffset = (noise.GetNoise(i + chunkPosition.x * 2, j + chunkPosition.z * 2) - 1) * 5;
                 if (k + yOffset > 6)
                     blockVal.emplace_back(cobblestoneVal);
                 else if (k + yOffset > 3)
@@ -37,14 +39,17 @@ void Chunk::bufferizeChunkMesh(std::vector<unsigned char> blockVal, Shader &shad
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, chunkVertices.size() * sizeof(float), chunkVertices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(5 * sizeof(float)));
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)(6 * sizeof(float)));
+    glEnableVertexAttribArray(3);
 
     glBindVertexArray(0);
     // std::cout << "Chunk mesh generated with " << chunkVertices.size() / 6 << " vertices." << std::endl;
@@ -95,6 +100,7 @@ void Chunk::buildChunkMesh(const std::vector<unsigned char> &blockVal, std::vect
                             meshVertices.push_back(prototype.vertices[i + 3]);
                             meshVertices.push_back(prototype.vertices[i + 4]);
                             meshVertices.push_back((float)textureIndex);
+                            meshVertices.push_back(shadows[face.offset/30]);
                         }
                     }
                 }
