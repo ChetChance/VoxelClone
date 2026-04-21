@@ -21,6 +21,10 @@
 *.idb
 *.exe
 
+# macOS specific
+*.DS_Store
+main
+
 # Build directories
 /build/
 /build-*/
