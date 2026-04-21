@@ -18,6 +18,7 @@
                 "${workspaceFolder}\\stb_impl.cpp",
                 "${workspaceFolder}\\textureHandler.cpp",
                 "${workspaceFolder}\\chunk.cpp",
+                "-DGL_SILENCE_DEPRECATION",
                 "-lglfw3dll",
                 "-lopengl32",
                 "-o",

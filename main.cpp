@@ -28,10 +28,33 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_DEPTH_BITS, 24);
 
-	GLFWmonitor *primary = glfwGetPrimaryMonitor();
-	const GLFWvidmode *mode = glfwGetVideoMode(primary);
+	int count;
+	GLFWmonitor **monitors = glfwGetMonitors(&count);
+	GLFWmonitor *primary;
+	GLFWmonitor *secondMonitor;
+	const GLFWvidmode *mode;
+	if (count > 1)
+	{
+		secondMonitor = monitors[1];
+		// Use secondMonitor for glfwCreateWindow, etc.
+	}else{
+		primary = monitors[0];
+	}
+
+	try
+	{
+		mode = glfwGetVideoMode(secondMonitor);
+	}
+	catch(const std::exception& e)
+	{
+		mode = glfwGetVideoMode(primary);
+		std::cerr << "Error" << &e << std::endl;
+	}
+	
+	
 	// int width = mode->width;
 	// int height = mode->height;
 	int width = 1200;
