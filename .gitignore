@@ -1,0 +1,46 @@
+# Generic C/C++ ignores
+*.o
+*.obj
+*.lo
+*.lai
+*.slo
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+*.i
+*.ii
+*.s
+*.ilk
+*.pch
+*.pdb
+*.idb
+*.exe
+
+# Build directories
+/build/
+/build-*/
+/bin/
+/lib/
+/lib64/
+/dist/
+/Debug/
+/Release/
+/x64/
+/x86/
+/target/
+
+# Temporary files
+*~
+*.swp
+*.swo
+._*
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
