@@ -16,23 +16,14 @@ Character::Character(const float playerRadius, const float playerHeight, float g
     this->fly = fly;
 }
 
-void Character::update(Shader &shader, GLFWwindow *window, Cube collisionCubes[], int numCubes, float deltaTime, bool doCollision, bool gravityEnabled)
+void Character::update(Shader &shader, GLFWwindow *window, float deltaTime, bool gravityEnabled)
 {
     view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
     shader.setMat4("view", glm::value_ptr(view));
-    collideVec = glm::vec3(0.0f, 0.0f, 0.0f);
-    if (doCollision)
-    {
-        /* code */
 
-        for (size_t i = 0; i < numCubes; i++)
-        {
-            collideVec += CheckCollision(cameraPos, playerRadius, playerHeight, collisionCubes[i].position, collisionCubes[i].size);
-        }
-    }
-
-    processInput(window, deltaTime);
     handleGravity(window, deltaTime, gravityEnabled);
+    isOnGround = false;
+    processInput(window, deltaTime);
 }
 
 void Character::mouse_Handler(GLFWwindow *window, double xpos, double ypos)
@@ -59,7 +50,20 @@ void Character::mouse_Handler(GLFWwindow *window, double xpos, double ypos)
     preMouse = {xpos, ypos};
 }
 
-glm::vec3 Character::CheckCollision(glm::vec3 posOne, float playerReach, float playerH, glm::vec3 posTwo, glm::vec3 sizeTwo) // AABB - AABB collision
+void Character::handleCollision(const std::vector<glm::vec3> &collisionCubes, bool doCollision)
+{
+    if (doCollision)
+    {
+        /* code */
+
+        for (size_t i = 0; i < collisionCubes.size(); i++)
+        {
+            CheckCollision(cameraPos, playerRadius, playerHeight, collisionCubes[i], glm::vec3(0.5f, 0.5f, 0.5f));
+        }
+    }
+}
+
+void Character::CheckCollision(glm::vec3 posOne, float playerReach, float playerH, glm::vec3 posTwo, glm::vec3 sizeTwo) // AABB - AABB collision
 {
     glm::vec3 playerMins(
         posOne.x - playerReach,
@@ -67,7 +71,7 @@ glm::vec3 Character::CheckCollision(glm::vec3 posOne, float playerReach, float p
         posOne.z - playerReach);
     glm::vec3 playerMaxs(
         posOne.x + playerReach,
-        posOne.y - playerH + playerReach,
+        posOne.y,
         posOne.z + playerReach);
     glm::vec3 playerCenter(
         posOne.x,
@@ -92,36 +96,27 @@ glm::vec3 Character::CheckCollision(glm::vec3 posOne, float playerReach, float p
 
     glm::vec3 collisionRay;
 
-    if (glm::abs(playerMins.x) < glm::abs(aabbMaxs.x) && glm::abs(playerMaxs.x) > glm::abs(aabbMins.x) &&
-        glm::abs(playerMins.y) < glm::abs(aabbMaxs.y) && glm::abs(playerMaxs.y) > glm::abs(aabbMins.y) &&
-        glm::abs(playerMins.z) < glm::abs(aabbMaxs.z) && glm::abs(playerMaxs.z) > glm::abs(aabbMins.z))
+    if (playerMins.x < aabbMaxs.x && playerMaxs.x > aabbMins.x &&
+        playerMins.y < aabbMaxs.y && playerMaxs.y > aabbMins.y &&
+        playerMins.z < aabbMaxs.z && playerMaxs.z > aabbMins.z)
     {
         // std::cout << glm::to_string(aabbMins) << " " << glm::to_string(aabbMaxs) << std::endl;
         collisionRay = aabbCenter - playerCollideCenter;
-        if (std::abs(collisionRay.x) > std::abs(collisionRay.z) && std::abs(collisionRay.x) >= std::abs(collisionRay.y))
+        if (std::abs(collisionRay.x) > std::abs(collisionRay.z) && std::abs(collisionRay.x) >= std::abs(collisionRay.y) && ((velocity.x > 0 && collisionRay.x > 0) || (velocity.x<0 && collisionRay.x <0)))
         {
-            collisionRay.z = 0.0f;
-            collisionRay.y = 0.0f;
+            velocity.x = 0;
         }
-        else if (std::abs(collisionRay.z) > std::abs(collisionRay.x) && std::abs(collisionRay.z) >= std::abs(collisionRay.y))
+        else if (std::abs(collisionRay.z) > std::abs(collisionRay.x) && std::abs(collisionRay.z) >= std::abs(collisionRay.y) && ((velocity.z > 0 && collisionRay.z > 0) || (velocity.z < 0 && collisionRay.z <0)))
         {
-            collisionRay.x = 0.0f;
-            collisionRay.y = 0.0f;
+            velocity.z = 0;
         }
         else if (std::abs(collisionRay.y) > std::abs(collisionRay.x) && std::abs(collisionRay.y) > std::abs(collisionRay.z))
         {
-            collisionRay.x = 0.0f;
-            collisionRay.z = 0.0f;
+            velocity.y = 0;
+            isOnGround = true;
+            setPositionY(&cameraPos);
         }
-        else
-        {
-            collisionRay = glm::vec3(0.0f, 0.0f, 0.0f);
-        }
-        return collisionRay;
     }
-
-    // retrieve vector between center circle and closest point AABB and check if length <= radius
-    return glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
 void Character::setPositionY(glm::vec3 *pos)
@@ -132,7 +127,6 @@ void Character::setPositionY(glm::vec3 *pos)
 void Character::processInput(GLFWwindow *window, float deltaTime)
 {
     velocity = glm::vec3(0.0f, velocity.y, 0.0f);
-    glm::vec3 collideVecXZ = glm::vec3(collideVec.x, 0.0f, collideVec.z);
     cameraSpeed = 2.0f; // adjust accordingly
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -157,11 +151,6 @@ void Character::processInput(GLFWwindow *window, float deltaTime)
         gravitySpeed = 0.0f;
         cameraPos.y = 2.0f;
     }
-    if (collideVecXZ != glm::vec3(0.0f, 0.0f, 0.0f) && velocity != glm::vec3(0.0f, 0.0f, 0.0f))
-    {
-        velocity = glm::normalize(velocity) - glm::normalize(collideVecXZ);
-    }
-    cameraPos += glm::vec3(velocity.x, gravitySpeed, velocity.z) * cameraSpeed * deltaTime;
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
     {
         std::cout << "Position: " << glm::to_string(cameraPos) << std::endl;
@@ -172,17 +161,12 @@ void Character::handleGravity(GLFWwindow *window, float deltaTime, bool gravityE
 {
     if (gravityEnabled)
     {
-        gravitySpeed += gravity * deltaTime;
-        if (collideVec.y != 0.0f)
+        velocity.y += gravity * deltaTime;
+        if (isOnGround)
         {
             if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
             {
-                gravitySpeed = jumpStrength;
-            }
-            else
-            {
-                gravitySpeed = 0.0f;
-                setPositionY(&cameraPos);
+                velocity.y = jumpStrength;
             }
         }
     }
@@ -197,4 +181,9 @@ void Character::handleGravity(GLFWwindow *window, float deltaTime, bool gravityE
             cameraPos.y -= jumpStrength * deltaTime;
         }
     }
+}
+
+void Character::move(float deltaTime)
+{
+    cameraPos += velocity * cameraSpeed * deltaTime;
 }

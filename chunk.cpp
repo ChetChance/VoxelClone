@@ -1,7 +1,6 @@
 #include "chunk.h"
-#include "FastNoiseLite.h"
 
-Chunk::Chunk(unsigned int chunkSize, Shader &shader, glm::vec3 chunkPosition)
+Chunk::Chunk(unsigned int chunkSize, Shader &shader, glm::vec3 chunkPosition, FastNoiseLite noise)
 {
     this->chunkSize = chunkSize;
     this->chunkPosition = chunkPosition;
@@ -12,7 +11,6 @@ Chunk::Chunk(unsigned int chunkSize, Shader &shader, glm::vec3 chunkPosition)
         {
             for (float k = 0; k < chunkSize; k++)
             {
-                FastNoiseLite noise = FastNoiseLite();
                 float yOffset = (noise.GetNoise(i + chunkPosition.x * 2, j + chunkPosition.z * 2) - 1) * 5;
                 if (k + yOffset > 6)
                     blockVal.emplace_back(cobblestoneVal);
@@ -92,6 +90,7 @@ void Chunk::buildChunkMesh(const std::vector<unsigned char> &blockVal, std::vect
                 {
                     if (!isBlockFilled(x + face.dx, y + face.dy, z + face.dz, blockVal))
                     {
+                        blockPositions.push_back(glm::vec3(worldPos.x + chunkPosition.x, worldPos.y, worldPos.z + chunkPosition.z));
                         for (int i = face.offset; i < face.offset + 30; i += 5)
                         {
                             meshVertices.push_back(prototype.vertices[i + 0] + worldPos.x);

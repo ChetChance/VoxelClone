@@ -2,6 +2,7 @@
 #define CHUNK_H
 
 #include "cube.h"
+#include "FastNoiseLite.h"
 
 inline unsigned char airVal = 0;
 inline unsigned char grassVal = 1;
@@ -13,7 +14,9 @@ class Chunk
         std::vector<float> chunkVertices;
         unsigned int VBO, VAO;
 
-        Chunk(unsigned int chunkSize, Shader& shader, glm::vec3 chunkPosition);
+        std::vector<glm::vec3> blockPositions;
+
+        Chunk(unsigned int chunkSize, Shader &shader, glm::vec3 chunkPosition, FastNoiseLite noise);
         inline size_t gridIndex(unsigned int x, unsigned int y, unsigned int z);
         inline size_t heightMapIndex(unsigned int x, unsigned int z);
         void bufferizeChunkMesh(std::vector<unsigned char> blockVal, Shader& shader);

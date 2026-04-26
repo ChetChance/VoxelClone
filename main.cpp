@@ -92,16 +92,21 @@ int main()
 
 	std::vector<Chunk> chunks;
 
+	FastNoiseLite noise = FastNoiseLite( rand() );
+
 	for (int chunkX = 0; chunkX < 10; chunkX++)
 	{
 		for (int chunkZ = 0; chunkZ < 10; chunkZ++)
 		{
 
-			Chunk chunk(chunkSize, mainShader, glm::vec3(chunkX * chunkSize * 0.5f, 0.0f, chunkZ * chunkSize * 0.5f));
+			Chunk chunk(chunkSize, mainShader, glm::vec3(chunkX * chunkSize * 0.5f, 0.0f, chunkZ * chunkSize * 0.5f), noise);
 
 			chunks.push_back(chunk);
 		}
 	}
+
+	// Chunk chunk(chunkSize, mainShader, glm::vec3(-1 * chunkSize * 0.5f, 0.0f, -1 * chunkSize * 0.5f), noise);
+	// chunks.push_back(chunk);
 
 	// 1, -1, 1 is this cube's position
 
@@ -141,13 +146,17 @@ int main()
 		mainShader.setMat4("projection", glm::value_ptr(projection));
 
 		mainShader.setMat4("view", glm::value_ptr(view));
-
-		player.update(mainShader, window, 0, 0, deltaTime, true, false);
+		
+		player.update(mainShader, window, deltaTime, true);
 
 		for (Chunk &chunk : chunks)
 		{
 			chunk.update(mainShader, grassTexture, cobbleTexture);
+			player.handleCollision(chunk.blockPositions, true);
 		}
+
+		player.move(deltaTime);
+		// std::cout<<chunks[0].blockPositions.size()<<std::endl;
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
