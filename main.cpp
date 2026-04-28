@@ -1,5 +1,4 @@
 #include "character.h"
-#include "chunk.h"
 #include <algorithm>
 
 float deltaTime = 0.0f; // Time between current frame and last frame
@@ -40,7 +39,9 @@ int main()
 	{
 		secondMonitor = monitors[1];
 		// Use secondMonitor for glfwCreateWindow, etc.
-	}else{
+	}
+	else
+	{
 		primary = monitors[0];
 	}
 
@@ -48,13 +49,12 @@ int main()
 	{
 		mode = glfwGetVideoMode(secondMonitor);
 	}
-	catch(const std::exception& e)
+	catch (const std::exception &e)
 	{
 		mode = glfwGetVideoMode(primary);
 		std::cerr << "Error" << &e << std::endl;
 	}
-	
-	
+
 	// int width = mode->width;
 	// int height = mode->height;
 	int width = 1200;
@@ -92,14 +92,14 @@ int main()
 
 	std::vector<Chunk> chunks;
 
-	FastNoiseLite noise = FastNoiseLite( rand() );
+	FastNoiseLite noise = FastNoiseLite(rand());
 
-	for (int chunkX = 0; chunkX < 10; chunkX++)
+	for (int chunkX = -10; chunkX < 10; chunkX++)
 	{
-		for (int chunkZ = 0; chunkZ < 10; chunkZ++)
+		for (int chunkZ = -10; chunkZ < 10; chunkZ++)
 		{
-
-			Chunk chunk(chunkSize, mainShader, glm::vec3(chunkX * chunkSize * 0.5f, 0.0f, chunkZ * chunkSize * 0.5f), noise);
+			glm::vec3 chunkPos = glm::vec3((float)chunkX * (float)chunkSize * 0.5f, 0.0f, (float)chunkZ * (float)chunkSize * 0.5f);
+			Chunk chunk(chunkSize, mainShader, chunkPos, noise, true, true);
 
 			chunks.push_back(chunk);
 		}
@@ -131,8 +131,31 @@ int main()
 	// wireframe mode
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	// Crosshair setup - simple + shape in screen space
+	float crosshairSize = 0.02f; // Size relative to screen
+	float crosshairVerts[] = {
+		// Horizontal line
+		-crosshairSize, 0.0f,
+		crosshairSize, 0.0f,
+		// Vertical line
+		0.0f, -crosshairSize,
+		0.0f, crosshairSize};
+
+	Shader crosshairShader("crosshairVertex.glsl", "crosshairFrag.glsl");
+	crosshairShader.use();
+
+	unsigned int crosshairVBO, crosshairVAO;
+	glGenBuffers(1, &crosshairVBO);
+	glGenVertexArrays(1, &crosshairVAO);
+	glBindVertexArray(crosshairVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, crosshairVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(crosshairVerts), crosshairVerts, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+
 	while (!glfwWindowShouldClose(window))
 	{
+
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
@@ -143,20 +166,37 @@ int main()
 		glClearColor(173.0f / 255.0f, 216.0f / 255.0f, 230.0f / 255.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		mainShader.setMat4("projection", glm::value_ptr(projection));
+		mainShader.use();
 
+		mainShader.setMat4("projection", glm::value_ptr(projection));
 		mainShader.setMat4("view", glm::value_ptr(view));
-		
-		player.update(mainShader, window, deltaTime, true);
+
+		player.update(mainShader, window, deltaTime, false);
 
 		for (Chunk &chunk : chunks)
 		{
 			chunk.update(mainShader, grassTexture, cobbleTexture);
 			player.handleCollision(chunk.blockPositions, true);
+			if (chunk.chunkPosition.x <= player.cameraPos.x + 16.0f && chunk.chunkPosition.x >= player.cameraPos.x - 16.0f && chunk.chunkPosition.z <= player.cameraPos.z + 16.0f && chunk.chunkPosition.z >= player.cameraPos.z - 16.0f)
+			{
+				player.checkRayCollision(chunk, window, mainShader);
+			}
 		}
 
 		player.move(deltaTime);
 		// std::cout<<chunks[0].blockPositions.size()<<std::endl;
+
+		// Draw crosshair using blending (no depth changes)
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		crosshairShader.use();
+		crosshairShader.setVec3("crosshairColor", 0.0f, 0.0f, 0.0f);
+
+		glBindVertexArray(crosshairVAO);
+		glDrawArrays(GL_LINES, 0, 4);
+
+		glDisable(GL_BLEND);
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
