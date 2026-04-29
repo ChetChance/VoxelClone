@@ -35,7 +35,7 @@ void Chunk::bufferizeChunkMesh(std::vector<unsigned char> blockVal, Shader &shad
 {
     buildChunkMesh(blockVal, chunkVertices);
 
-    std::cout << blockPositions.size() << std::endl;
+    // std::cout << blockPositions.size() << std::endl;
 
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -44,17 +44,20 @@ void Chunk::bufferizeChunkMesh(std::vector<unsigned char> blockVal, Shader &shad
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, chunkVertices.size() * sizeof(float), chunkVertices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 10 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 10 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)(5 * sizeof(float)));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 10 * sizeof(float), (void *)(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)(6 * sizeof(float)));
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 10 * sizeof(float), (void *)(8 * sizeof(float)));
     glEnableVertexAttribArray(3);
+
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 10 * sizeof(float), (void *)(9 * sizeof(float)));
+    glEnableVertexAttribArray(4);
 
     glBindVertexArray(0);
     // std::cout << "Chunk mesh generated with " << chunkVertices.size() / 6 << " vertices." << std::endl;
@@ -70,16 +73,16 @@ void Chunk::buildChunkMesh(const std::vector<unsigned char> &blockVal, std::vect
         int dx, dy, dz, offset;
     };
     static const FaceInfo faces[] = {
-        {1, 0, 0, 90},   // right
-        {-1, 0, 0, 60},  // left
+        {1, 0, 0, 144},  // right
+        {-1, 0, 0, 96},  // left
         {0, 0, 1, 0},    // front
-        {0, 0, -1, 30},  // back
-        {0, -1, 0, 150}, // top
-        {0, 1, 0, 120}   // bottom
+        {0, 0, -1, 48},  // back
+        {0, -1, 0, 240}, // top
+        {0, 1, 0, 192}   // bottom
     };
 
-    meshVertices.reserve(chunkSize * chunkSize * chunkSize * 24);
-    
+    // meshVertices.reserve(chunkSize * chunkSize * chunkSize * 100); // Reserve space for vertices (6 faces * 2 triangles * 3 vertices * 4 attributes)
+
     for (unsigned int x = 0; x < chunkSize; x++)
     {
         for (unsigned int y = 0; y < chunkSize; y++)
@@ -93,22 +96,25 @@ void Chunk::buildChunkMesh(const std::vector<unsigned char> &blockVal, std::vect
                 glm::vec3 worldPos = glm::vec3(x * 0.5f, -((float)y) * 0.5f, z * 0.5f);
                 int textureIndex = (blockVal[gridIndex(x, y, z)] == cobblestoneVal) ? 1 : 0;
 
-                if(isBlockFilled(x, y, z, blockVal))
+                if (isBlockFilled(x, y, z, blockVal))
                     blockPositions.emplace_back(worldPos + chunkPosition);
 
                 for (const FaceInfo &face : faces)
                 {
                     if (!isBlockFilled(x + face.dx, y + face.dy, z + face.dz, blockVal))
                     {
-                        for (int i = face.offset; i < face.offset + 30; i += 5)
+                        for (int i = face.offset; i < face.offset + 48; i += 8)
                         {
                             meshVertices.push_back(prototype.vertices[i + 0] + worldPos.x);
                             meshVertices.push_back(prototype.vertices[i + 1] + worldPos.y);
                             meshVertices.push_back(prototype.vertices[i + 2] + worldPos.z);
                             meshVertices.push_back(prototype.vertices[i + 3]);
                             meshVertices.push_back(prototype.vertices[i + 4]);
+                            meshVertices.push_back(prototype.vertices[i + 5]);
+                            meshVertices.push_back(prototype.vertices[i + 6]);
+                            meshVertices.push_back(prototype.vertices[i + 7]);
                             meshVertices.push_back((float)textureIndex);
-                            meshVertices.push_back(shadows[face.offset/30]);
+                            meshVertices.push_back(shadows[face.offset / 30]);
                         }
                     }
                 }
@@ -119,12 +125,14 @@ void Chunk::buildChunkMesh(const std::vector<unsigned char> &blockVal, std::vect
 
 void Chunk::updateBlock(unsigned char blockValue, glm::vec3 blockPos, Shader &shader)
 {
+    if (blockPos.y > 0 && blockPos.x >= 0 && blockPos.z >= 0 && blockPos.x < (float)chunkSize && blockPos.y < (float)chunkSize && blockPos.z < (float)chunkSize){
         blockVal[gridIndex(blockPos.x, blockPos.y, blockPos.z)] = blockValue;
-    
-        chunkVertices.clear();
-        blockPositions.clear();
-        // Rebuild the chunk mesh with the updated block values
-        bufferizeChunkMesh(blockVal, shader);
+    }
+
+    chunkVertices.clear();
+    blockPositions.clear();
+    // Rebuild the chunk mesh with the updated block values
+    bufferizeChunkMesh(blockVal, shader);
 }
 
 inline size_t Chunk::gridIndex(unsigned int x, unsigned int y, unsigned int z)

@@ -15,7 +15,7 @@ public:
 	glm::vec3 position;
 	glm::vec3 CubeID;
 	glm::vec3 size;
-	float vertices[36*5];
+	float vertices[36*8];
 	unsigned int VBO, VAO;
 	glm::mat4 model;
 	bool pX, nX, pY, nY, pZ, nZ;

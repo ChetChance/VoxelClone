@@ -13,7 +13,7 @@ Character::Character(const float playerRadius, const float playerHeight, float g
     this->playerRadius = playerRadius;
     mouseSensitivity = Sensitivity;
     cameraSpeed = speed;
-    this->fly = fly;
+    isOnGround = false;
 }
 
 void Character::update(Shader &shader, GLFWwindow *window, float deltaTime, bool gravityEnabled)
@@ -120,14 +120,17 @@ void Character::CheckCollision(glm::vec3 posOne, float playerReach, float player
 void Character::checkRayCollision(Chunk &chunk, GLFWwindow *window, Shader &shader)
 {
     int lcPress = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    int rcPress = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     float intersectionDistance;
     glm::vec3 closestBlock = glm::vec3(0.0f);
+    previousClosestDistance = 100000.0f;
+    glm::vec3 intersectionPlane;
 
     if (lcPress == GLFW_PRESS)
     {
         for (glm::vec3 &block : chunk.blockPositions)
         {
-            if (TestRayOBBIntersection(cameraPos, cameraFront, block, glm::vec3(block.x + 0.5f, block.y + 0.5f, block.z + 0.5f), glm::mat4(1), intersectionDistance))
+            if (TestRayOBBIntersection(cameraPos, cameraFront, block, glm::vec3(block.x + 0.5f, block.y + 0.5f, block.z + 0.5f), glm::mat4(1), intersectionDistance, intersectionPlane))
             {
                 if (intersectionDistance < previousClosestDistance)
                 {
@@ -136,11 +139,32 @@ void Character::checkRayCollision(Chunk &chunk, GLFWwindow *window, Shader &shad
                 }
             }
         }
-        if (previousClosestDistance != 100000.0f) // If an intersection was found
+        if (previousClosestDistance <= 10.0f) // If an intersection was found
         {
-            std::cout << "Closest Intersection: " << previousClosestDistance << std::endl;
-            std::cout << "Block at " << glm::to_string(closestBlock) << " was hit! Distance: " << intersectionDistance << std::endl;
+            //std::cout << "Closest Intersection: " << previousClosestDistance << std::endl;
+            //std::cout << "Block at " << glm::to_string(closestBlock) << " was hit! Distance: " << intersectionDistance << std::endl;
             chunk.updateBlock(0, closestBlock, shader); // Set block to air
+        }
+    }
+    else if (rcPress == GLFW_PRESS)
+    {
+        for (glm::vec3 &block : chunk.blockPositions)
+        {
+            if (TestRayOBBIntersection(cameraPos, cameraFront, block, glm::vec3(block.x + 0.5f, block.y + 0.5f, block.z + 0.5f), glm::mat4(1), intersectionDistance, intersectionPlane))
+            {
+                if (intersectionDistance < previousClosestDistance)
+                {
+                    previousClosestDistance = intersectionDistance;
+                    //std::cout << "Intersection Plane: " << glm::to_string(intersectionPlane) << std::endl;
+                    closestBlock = glm::vec3((block.x - chunk.chunkPosition.x) * 2.0f, -(block.y - chunk.chunkPosition.y) * 2.0f, (block.z - chunk.chunkPosition.z) * 2.0f) - intersectionPlane;
+                }
+            }
+        }
+        if (previousClosestDistance <= 10.0f && previousClosestDistance > playerRadius) // If an intersection was found
+        {
+            //std::cout << "Closest Intersection: " << previousClosestDistance << std::endl;
+            //std::cout << "Block at " << glm::to_string(closestBlock) << " was hit! Distance: " << intersectionDistance << std::endl;
+            chunk.updateBlock(1, closestBlock, shader); // Set block to grass
         }
     }
     else if (lcPress == GLFW_RELEASE)
@@ -155,7 +179,8 @@ bool Character::TestRayOBBIntersection(
     glm::vec3 aabb_min,          // Minimum X,Y,Z coords of the mesh when not transformed at all.
     glm::vec3 aabb_max,          // Maximum X,Y,Z coords. Often aabb_min*-1 if your mesh is centered, but it's not always the case.
     glm::mat4 ModelMatrix,       // Transformation applied to the mesh (which will thus be also applied to its bounding box)
-    float &intersection_distance // Output : distance between ray_origin and the intersection with the OBB
+    float &intersection_distance, // Output : distance between ray_origin and the intersection with the OBB
+    glm::vec3 &intersection_plane
 )
 {
 
@@ -188,14 +213,17 @@ bool Character::TestRayOBBIntersection(
                 float w = t1;
                 t1 = t2;
                 t2 = w; // swap t1 and t2
+                xaxis = -xaxis; // invert xaxis to get the correct normal
             }
 
             // tMax is the nearest "far" intersection (amongst the X,Y and Z planes pairs)
             if (t2 < tMax)
                 tMax = t2;
             // tMin is the farthest "near" intersection (amongst the X,Y and Z planes pairs)
-            if (t1 > tMin)
+            if (t1 > tMin){
                 tMin = t1;
+                intersection_plane = xaxis;
+            }
 
             // And here's the trick :
             // If "far" is closer than "near", then there is NO intersection.
@@ -228,12 +256,17 @@ bool Character::TestRayOBBIntersection(
                 float w = t1;
                 t1 = t2;
                 t2 = w;
+            }else
+            {
+                yaxis = -yaxis;
             }
 
             if (t2 < tMax)
                 tMax = t2;
-            if (t1 > tMin)
+            if (t1 > tMin){
                 tMin = t1;
+                intersection_plane = yaxis;
+            }
             if (tMin > tMax)
                 return false;
         }
@@ -262,12 +295,15 @@ bool Character::TestRayOBBIntersection(
                 float w = t1;
                 t1 = t2;
                 t2 = w;
+                zaxis = -zaxis;
             }
 
             if (t2 < tMax)
                 tMax = t2;
-            if (t1 > tMin)
+            if (t1 > tMin){
                 tMin = t1;
+                intersection_plane = zaxis;
+            }
             if (tMin > tMax)
                 return false;
         }
@@ -351,4 +387,22 @@ void Character::handleGravity(GLFWwindow *window, float deltaTime, bool gravityE
 void Character::move(float deltaTime)
 {
     cameraPos += velocity * cameraSpeed * deltaTime;
+}
+
+glm::vec3 Character::SnapToAxis(const glm::vec3& v) {
+    float absX = std::abs(v.x);
+    float absY = std::abs(v.y);
+    float absZ = std::abs(v.z);
+
+    glm::vec3 result = glm::vec3(0.0f);
+
+    if (absX >= absY && absX >= absZ) {
+        result.x = (v.x >= 0) ? 1.0f : -1.0f;
+    } else if (absY >= absX && absY >= absZ) {
+        result.y = (v.y >= 0) ? 1.0f : -1.0f;
+    } else {
+        result.z = (v.z >= 0) ? 1.0f : -1.0f;
+    }
+
+    return result;
 }

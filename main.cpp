@@ -170,13 +170,14 @@ int main()
 
 		mainShader.setMat4("projection", glm::value_ptr(projection));
 		mainShader.setMat4("view", glm::value_ptr(view));
+		mainShader.setVec3("viewPos", player.cameraPos.x, player.cameraPos.y, player.cameraPos.z);
 
 		player.update(mainShader, window, deltaTime, false);
 
 		for (Chunk &chunk : chunks)
 		{
 			chunk.update(mainShader, grassTexture, cobbleTexture);
-			player.handleCollision(chunk.blockPositions, true);
+			player.handleCollision(chunk.blockPositions, false);
 			if (chunk.chunkPosition.x <= player.cameraPos.x + 16.0f && chunk.chunkPosition.x >= player.cameraPos.x - 16.0f && chunk.chunkPosition.z <= player.cameraPos.z + 16.0f && chunk.chunkPosition.z >= player.cameraPos.z - 16.0f)
 			{
 				player.checkRayCollision(chunk, window, mainShader);
